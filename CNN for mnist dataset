@@ -1,0 +1,89 @@
+Implement the Image classification CNN model for classifying hand-written MNIST dataset by dividing the model into following 4 stages: a. Loading and preprocessing the image data b. Defining the model's architecture c. Training the model d. Estimating the model's performance
+
+# Step a: Loading and preprocessing the image data
+import tensorflow as tf
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+import matplotlib.pyplot as plt
+
+# Load MNIST dataset
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# Reshape data to include channel dimension (28x28x1 for grayscale)
+x_train = x_train.reshape((x_train.shape[0], 28, 28, 1))
+x_test = x_test.reshape((x_test.shape[0], 28, 28, 1))
+
+# Normalize pixel values (0–255 → 0–1)
+x_train = x_train.astype("float32") / 255.0
+x_test = x_test.astype("float32") / 255.0
+
+# One-hot encode labels (since CNN uses categorical crossentropy)
+y_train = to_categorical(y_train, 10)
+y_test = to_categorical(y_test, 10)
+
+print("Training data shape:", x_train.shape)
+print("Testing data shape:", x_test.shape)
+
+# ---------------------------------------------------------------
+# Step b: Defining the model's architecture
+# ---------------------------------------------------------------
+model = Sequential([
+    Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),  # 32 filters of size 3x3
+    MaxPooling2D((2, 2)),                                            # downsample 2x2
+    Conv2D(64, (3, 3), activation='relu'),                           # 64 filters of size 3x3
+    MaxPooling2D((2, 2)),
+    Flatten(),
+    Dense(128, activation='relu'),                                   # fully connected layer
+    Dropout(0.5),                                                    # reduce overfitting
+    Dense(10, activation='softmax')                                  # 10 output classes
+])
+
+# Compile model
+model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
+model.summary()
+
+# ---------------------------------------------------------------
+# Step c: Training the model
+# ---------------------------------------------------------------
+history = model.fit(
+    x_train, y_train,
+    epochs=10,
+    batch_size=64,
+    validation_data=(x_test, y_test),
+    verbose=1
+)
+
+# ---------------------------------------------------------------
+# Step d: Estimating the model's performance
+# ---------------------------------------------------------------
+test_loss, test_acc = model.evaluate(x_test, y_test, verbose=2)
+print(f"\nTest accuracy: {test_acc:.4f}")
+print(f"Test loss: {test_loss:.4f}")
+
+# Plot accuracy and loss
+plt.figure(figsize=(12, 5))
+
+# Accuracy plot
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'], label='Train Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.title('Model Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend()
+
+# Loss plot
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'], label='Train Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.title('Model Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
+
+plt.show()
